@@ -1,0 +1,120 @@
+#include <AccelStepper.h>
+#include <IRremote.h>
+
+
+#define CAM_TRIGGER_PIN 6   // 
+#define STEPS 40040         //numero STEP per 360 (5005 full step 10010 half step 40040 micro stepping)
+#define FOTO 28          // risoluzione= 1,8(passo angolare dello stepper)°passo
+#define tempo 1000
+#define GC 2
+
+int receiver = 11; // pin 1 of IR receiver to Arduino digital pin 11
+IRrecv irrecv(receiver); // create instance of 'irrecv'
+decode_results results;
+
+const int buttonPin = 12;
+int buttonState = 0;
+
+const int buttonPin1 = 4;
+int buttonState1 = 0;
+
+const int buttonPin2 = 7;
+int buttonState2 = 0;
+
+int vel = 1;
+
+int passo= 0;
+int joyPin1 = 0;                 // slider variable connecetd to analog pin 0
+int joyPin2 = 1;                 // slider variable connecetd to analog pin 1
+int value1 = 0;                  // variable to read the value from the analog pin 0
+int value2 = 0;
+
+AccelStepper mystepper(1,9,8);
+
+void setup()
+{
+  Serial.begin(9600); 
+  mystepper.setMaxSpeed(10000.0);       //(velocità 2 foto 10000)
+  mystepper.setAcceleration(6000.0);    //(accellerazione 2 foto 6000) (
+  mystepper.setSpeed(1000);
+  
+  pinMode(CAM_TRIGGER_PIN, OUTPUT);
+  pinMode(buttonPin, INPUT);
+  pinMode(buttonPin1, INPUT);
+  pinMode(buttonPin2, INPUT);
+  
+  irrecv.enableIRIn();
+  
+}
+
+void loop()
+{   
+  buttonState = digitalRead(buttonPin);
+  buttonState1 = digitalRead(buttonPin1);
+  buttonState2 = digitalRead(buttonPin2);
+  
+  int value1 = analogRead(0);
+  value1 = map(value1, 0, 1023, -800, 800);
+  delay(GC);
+  
+  if(value1 >= 100) //    COMANDO MANUALE Joystick
+    {  
+    mystepper.setSpeed(value1);     
+    mystepper.runSpeed();  
+    Serial.println(value1);
+    }                              
+   
+  if(value1 <= -100)
+    {      
+    mystepper.setSpeed(value1);     
+    mystepper.runSpeed();  
+    Serial.println(value1);    
+    }    
+     
+  if(buttonState1 == HIGH)    //COMANDO MANUALE  Bottone
+      {
+        mystepper.move(1);        
+       delay(GC);
+       return;
+       }
+       
+   if(buttonState2 == HIGH)       
+      {
+        mystepper.move(-1);
+       delay(GC);
+       return;
+       
+       }    
+       
+  if (buttonState == HIGH)
+  {
+    delay(1500);
+    buttonState = digitalRead(buttonPin);
+    
+  if (buttonState == HIGH)       // Ciclo AUTOMATICO
+  {  
+    Serial.println(passo);  
+    passo=(STEPS/FOTO);
+    for (int i=1; i <= STEPS/passo; i++)
+  {  
+          buttonState1 = digitalRead(buttonPin1);
+                            
+          Serial.println(i);
+          Serial.println(passo);
+          mystepper.runToPosition();
+          digitalWrite(CAM_TRIGGER_PIN, HIGH);  
+          delay(tempo);
+          digitalWrite(CAM_TRIGGER_PIN, LOW);
+          mystepper.move(passo);
+          
+        }
+        mystepper.runToPosition();
+      }  
+   
+   else
+   {
+     mystepper.move(STEPS);
+     mystepper.runToPosition();
+   }
+ }
+ }
