@@ -1,31 +1,33 @@
-
+/* 
+Misuratore di distanza con sensore a ultrasuoni HC-SR04 (pin 9;10) + LCD 16x2 I2C e azionamento proporzionale di un servo (pin8).
+la misurazione è filtrata tramite media delle letture a loro volta filtrate tramite un filtro Kalman
+20/4/2020 Patrik@gmail.com
+*/
 #include <Servo.h>
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
-
 LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars and 2 line display
-
 Servo servo;
-float kk=0.75;  // POTENZA FILTRO
-int angle = 10;
-int sample = 10;
-int volume = 0 ;
-const int trigPin = 9; 
-const int echoPin = 10;
+
+float kk=0.75;  // potenza filtro Kalman (non superare il 0.85)
+int angle = 10; // angolo di partenza del servo
+int sample = 10;  //quantità sample 
+
+const int trigPin = 9; //Pin di mandata utlrasuono
+const int echoPin = 10; //Pin di ricezione ultrasuono
+
 unsigned int duration, distance, distresult; 
 
 void setup() 
 {
-  Serial.begin(9600);
-  servo.attach(8); 
+  Serial.begin(9600);              //inizializzazione seriale
+  servo.attach(8);                 // pin servo
   pinMode(trigPin, OUTPUT); 
   pinMode(echoPin, INPUT); 
-  Serial.begin(9600);
+  Serial.begin(9600);  
   
   lcd.init();                      // initialize the lcd 
-  // Print a message to the LCD.
   lcd.backlight();
-
 }
 
 void loop() 
@@ -71,7 +73,7 @@ void loop()
 }
 
 
-void reset()
+void reset() //subroutine di reset inseribile a piacimento
 { 
   for(angle = 10; angle < 180; angle++) // scan from 0 to 180 degrees
     {                                  
